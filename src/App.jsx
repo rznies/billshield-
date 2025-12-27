@@ -1,26 +1,40 @@
-import React, { useState, useRef } from 'react';
-import { Shield, CreditCard, Zap, Upload, FileText, AlertCircle, CheckCircle2, ChevronRight, X, Loader2, IndianRupee, TrendingDown, Calendar, ExternalLink } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { analyzeSubscriptions, fileToBase64 } from './lib/gemini';
+import { 
+  Loader2, 
+  Upload, 
+  FileText, 
+  Shield, 
+  Lock, 
+  CheckCircle2, 
+  Circle, 
+  X, 
+  ExternalLink, 
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Banknote,
+  CreditCard
+} from 'lucide-react';
 
-// Loading messages for progressive UX
-const LOADING_MESSAGES = [
-  "Scanning transactions...",
-  "Detecting recurring charges...",
-  "Calculating annual spend...",
-  "Finding unused subscriptions...",
-  "Generating cancellation guides..."
+const LOADING_STEPS = [
+  { title: "Scanning transactions...", desc: "Reading your statement data" },
+  { title: "Detecting recurring charges...", desc: "Identifying patterns in your last 12 statements" },
+  { title: "Calculating annual spend...", desc: "Summing up monthly and yearly costs" },
+  { title: "Finding unused subscriptions...", desc: "Analyzing usage patterns and frequency" }
 ];
 
 const BillShield = () => {
   // Input states
   const [statementText, setStatementText] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
-  const [inputMode, setInputMode] = useState('text'); // 'text' | 'pdf'
 
   // Analysis states
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('');
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [auditResult, setAuditResult] = useState(null);
   const [error, setError] = useState(null);
 
@@ -29,53 +43,54 @@ const BillShield = () => {
 
   const fileInputRef = useRef(null);
 
-  // Handle PDF file selection
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'application/pdf') {
       setPdfFile(file);
-      setInputMode('pdf');
       setError(null);
     } else if (file) {
       setError('Please upload a PDF file.');
     }
   };
 
-  // Handle drag and drop
   const handleDrop = (e) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file && file.type === 'application/pdf') {
       setPdfFile(file);
-      setInputMode('pdf');
       setError(null);
     } else if (file) {
       setError('Please upload a PDF file.');
     }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
+  const handleDragOver = (e) => e.preventDefault();
 
-  // Main audit function
   const handleAudit = async () => {
     setError(null);
-    setAuditResult(null);
     setIsAnalyzing(true);
+    setLoadingStep(0);
+    setProgress(0);
 
-    // Progressive loading messages
-    let messageIndex = 0;
-    setLoadingMessage(LOADING_MESSAGES[0]);
-    const messageInterval = setInterval(() => {
-      messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
-      setLoadingMessage(LOADING_MESSAGES[messageIndex]);
-    }, 2000);
+    // Simulate progress animation
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + 1;
+      });
+    }, 50);
+
+    // Simulate step progression
+    const stepInterval = setInterval(() => {
+      setLoadingStep(prev => {
+        if (prev < 3) return prev + 1;
+        return prev;
+      });
+    }, 1500);
 
     try {
       let result;
-
-      if (inputMode === 'pdf' && pdfFile) {
+      if (pdfFile) {
         const base64 = await fileToBase64(pdfFile);
         result = await analyzeSubscriptions(base64, 'pdf');
       } else if (statementText.trim()) {
@@ -83,131 +98,91 @@ const BillShield = () => {
       } else {
         throw new Error('Please paste your statement text or upload a PDF.');
       }
+      
+      // Wait a bit to ensure the user sees the last step
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      clearInterval(progressInterval);
+      clearInterval(stepInterval);
+      setProgress(100);
+      setLoadingStep(3); // Ensure all steps are marked complete
+      
+      setTimeout(() => {
+        setAuditResult(result);
+        setIsAnalyzing(false);
+      }, 500);
 
-      setAuditResult(result);
     } catch (err) {
       console.error('Audit error:', err);
-      if (inputMode === 'pdf') {
-        setError("We couldn't read this PDF. Please paste the statement text instead.");
-        setInputMode('text');
-        setPdfFile(null);
-      } else {
-        setError(err.message || 'Analysis failed. Please try again.');
-      }
-    } finally {
-      clearInterval(messageInterval);
+      setError(err.message || 'Analysis failed. Please try again.');
       setIsAnalyzing(false);
-      setLoadingMessage('');
+      clearInterval(progressInterval);
+      clearInterval(stepInterval);
     }
   };
 
-  // Reset to start over
   const handleReset = () => {
     setStatementText('');
     setPdfFile(null);
     setAuditResult(null);
     setError(null);
     setSelectedSubscription(null);
+    setLoadingStep(0);
+    setProgress(0);
   };
 
-  // Check if we can run audit
-  const canAnalyze = (inputMode === 'pdf' && pdfFile) || (inputMode === 'text' && statementText.trim().length > 10);
+  const canAnalyze = pdfFile || statementText.trim().length > 10;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-slate-200 font-sans selection:bg-purple-500/30">
-      {/* Background Decor */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
-      </div>
-
-      {/* Header */}
-      <header className="relative z-10 border-b border-white/5 bg-black/20 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">BillShield</span>
-          </div>
-          <div className="text-sm text-slate-500">Powered by Google Gemini</div>
+    <div className="min-h-screen w-full bg-[#F9FAFB] font-sans text-slate-900 selection:bg-blue-100">
+      
+      {/* Header - Always visible unless in full screen results mode (optional, but keeping it clean) */}
+      <header className="w-full max-w-5xl mx-auto p-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Shield className="w-6 h-6 text-blue-600 fill-blue-600" />
+          <span className="font-bold text-xl tracking-tight">BillShield</span>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+           <span className="text-orange-600 text-xs font-bold">JD</span>
         </div>
       </header>
 
-      <main className="relative z-10 max-w-5xl mx-auto px-6 py-12">
+      <main className="w-full max-w-5xl mx-auto px-6 pb-12 flex flex-col items-center justify-center min-h-[calc(100vh-100px)]">
+        
         <AnimatePresence mode="wait">
-          {!auditResult ? (
-            // INPUT SCREEN
+          {/* 1. INPUT SCREEN */}
+          {!isAnalyzing && !auditResult && (
             <motion.div
               key="input"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
+              exit={{ opacity: 0, y: -10 }}
+              className="w-full max-w-[600px] flex flex-col gap-8 text-center"
             >
-              {/* Hero */}
-              <div className="text-center space-y-4 mb-12">
-                <h1 className="text-4xl md:text-5xl font-bold text-white">
-                  Find Your <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Hidden Subscriptions</span>
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                  BillShield
                 </h1>
-                <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-                  Paste your bank statement or upload a PDF. We'll show you what subscriptions you're paying for, what you can cancel, and how much you'll save.
+                <p className="text-slate-500 text-lg">
+                  Find subscriptions you forgot and money you're wasting.
                 </p>
               </div>
 
-              {/* Input Mode Toggle */}
-              <div className="flex justify-center gap-2 p-1 bg-white/5 rounded-xl w-fit mx-auto">
-                <button
-                  onClick={() => setInputMode('text')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${inputMode === 'text'
-                      ? 'bg-purple-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                    }`}
-                >
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  Paste Text
-                </button>
-                <button
-                  onClick={() => setInputMode('pdf')}
-                  className={`px-6 py-2 rounded-lg font-medium transition-all ${inputMode === 'pdf'
-                      ? 'bg-purple-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                    }`}
-                >
-                  <Upload className="w-4 h-4 inline mr-2" />
-                  Upload PDF
-                </button>
-              </div>
-
-              {/* Input Area */}
-              {inputMode === 'text' ? (
-                <div className="space-y-4">
-                  <textarea
-                    value={statementText}
-                    onChange={(e) => setStatementText(e.target.value)}
-                    placeholder="Paste your bank statement transactions here...
-
-Example:
-15 Dec 2024  NETFLIX.COM           ₹649.00
-15 Dec 2024  SPOTIFY PREMIUM       ₹119.00
-14 Dec 2024  AMAZON PRIME*1234     ₹1,499.00
-10 Dec 2024  GOOGLE *YOUTUBE       ₹129.00
-..."
-                    className="w-full h-72 p-6 bg-white/5 border border-white/10 rounded-2xl text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 resize-none font-mono text-sm"
-                  />
-                  <p className="text-sm text-slate-500 text-center">
-                    Copy transactions from your bank app, email statement, or exported PDF text.
-                  </p>
-                </div>
-              ) : (
-                <div
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 flex flex-col gap-6">
+                
+                {/* PDF Upload */}
+                <div 
                   onClick={() => fileInputRef.current?.click()}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
-                  className={`p-12 border-2 border-dashed rounded-3xl text-center cursor-pointer transition-all group ${pdfFile
-                      ? 'border-purple-500/50 bg-purple-500/10'
-                      : 'border-white/10 bg-white/5 hover:bg-white/[0.07] hover:border-white/20'
-                    }`}
+                  className={`
+                    group relative flex flex-col items-center justify-center gap-4 
+                    rounded-xl border-2 border-dashed p-10 transition-all cursor-pointer
+                    ${pdfFile 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50'
+                    }
+                  `}
                 >
                   <input
                     ref={fileInputRef}
@@ -216,233 +191,370 @@ Example:
                     onChange={handleFileChange}
                     className="hidden"
                   />
-                  {pdfFile ? (
-                    <div className="space-y-3">
-                      <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto">
-                        <CheckCircle2 className="w-8 h-8 text-purple-400" />
-                      </div>
-                      <p className="text-lg font-medium text-white">{pdfFile.name}</p>
-                      <p className="text-sm text-slate-500">Click to change file</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
-                        <CreditCard className="w-8 h-8 text-slate-400" />
-                      </div>
-                      <p className="text-lg font-medium">Drop your PDF statement here</p>
-                      <p className="text-slate-500 text-sm">Or click to browse files</p>
-                    </div>
-                  )}
+                  
+                  <div className={`
+                    w-12 h-12 rounded-full flex items-center justify-center transition-colors
+                    ${pdfFile ? 'bg-blue-100 text-blue-600' : 'bg-blue-50 text-blue-600 group-hover:scale-110 duration-200'}
+                  `}>
+                    {pdfFile ? <Check className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="font-semibold text-slate-900">
+                      {pdfFile ? pdfFile.name : 'Upload bank statement (PDF)'}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {pdfFile ? 'Click to change file' : 'Drag and drop or click to browse'}
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              {/* Error Message */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400"
-                >
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-                  <span>{error}</span>
-                </motion.div>
-              )}
+                {/* Divider */}
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink-0 mx-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">OR</span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
 
-              {/* Analyze Button */}
-              <div className="flex justify-center">
+                {/* Text Input */}
+                <textarea
+                  value={statementText}
+                  onChange={(e) => setStatementText(e.target.value)}
+                  placeholder="Paste your bank or card statement text here..."
+                  className="w-full h-32 p-4 rounded-xl border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm transition-all"
+                />
+
+                {error && (
+                  <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+                    <AlertTriangle className="w-4 h-4" />
+                    {error}
+                  </div>
+                )}
+
+                {/* Action Button */}
                 <button
                   onClick={handleAudit}
-                  disabled={!canAnalyze || isAnalyzing}
-                  className="px-12 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-xl hover:shadow-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                  disabled={!canAnalyze}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold h-12 rounded-lg transition-all shadow-sm active:scale-[0.98]"
                 >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      {loadingMessage}
-                    </>
-                  ) : (
-                    <>
-                      Analyze Subscriptions
-                      <Zap className="w-5 h-5" />
-                    </>
-                  )}
+                  Analyze Subscriptions
                 </button>
+
+                {/* Security Note */}
+                <div className="flex items-center justify-center gap-2 text-slate-400 text-xs font-medium">
+                  <Lock className="w-3 h-3" />
+                  Your data is analyzed once and never stored.
+                </div>
+
               </div>
             </motion.div>
-          ) : (
-            // RESULTS SCREEN
-            <motion.div
-              key="results"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-8"
-            >
-              {/* Back button */}
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
-              >
-                <ChevronRight className="w-4 h-4 rotate-180" />
-                Analyze another statement
-              </button>
+          )}
 
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
-                  <div className="flex items-center gap-3 text-slate-400 mb-2">
-                    <IndianRupee className="w-5 h-5" />
-                    <span className="text-sm font-medium">Total Annual Spend</span>
+          {/* 2. LOADING SCREEN */}
+          {isAnalyzing && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-[500px]"
+            >
+              <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                
+                {/* Header */}
+                <div className="bg-blue-50/50 p-8 flex flex-col items-center gap-4 border-b border-blue-100/50">
+                  <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center relative">
+                    <div className="absolute inset-0 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
+                    <Shield className="w-8 h-8 text-blue-600 fill-blue-600" />
                   </div>
-                  <div className="text-4xl font-bold text-white">
-                    ₹{auditResult.total_annual_spend.toLocaleString('en-IN')}
+                  <h2 className="text-2xl font-bold text-slate-900">Analyzing Expenses</h2>
+                </div>
+
+                {/* Progress Body */}
+                <div className="p-8 space-y-8">
+                  
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold tracking-wider text-blue-600 uppercase">
+                      <span>Processing</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="h-full bg-blue-600 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ type: "spring", stiffness: 50 }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Steps */}
+                  <div className="space-y-6">
+                    {LOADING_STEPS.map((step, index) => {
+                      const isCompleted = loadingStep > index;
+                      const isCurrent = loadingStep === index;
+                      const isPending = loadingStep < index;
+
+                      return (
+                        <div key={index} className="flex gap-4">
+                          <div className="flex-shrink-0 mt-0.5">
+                            {isCompleted ? (
+                              <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                              </div>
+                            ) : isCurrent ? (
+                              <div className="w-6 h-6 rounded-full border-2 border-blue-600 flex items-center justify-center">
+                                <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 rounded-full border-2 border-slate-200" />
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-sm font-semibold ${isPending ? 'text-slate-400' : 'text-slate-900'}`}>
+                              {step.title}
+                            </span>
+                            {isCurrent && (
+                              <motion.span 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="text-xs text-slate-500 mt-1"
+                              >
+                                {step.desc}
+                              </motion.span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+
+                {/* Footer */}
+                <div className="bg-slate-50 p-4 flex items-start gap-3 border-t border-slate-100">
+                  <Lock className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-700">Secure Analysis</p>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      This process creates a secure, read-only snapshot. Your data is encrypted end-to-end. 
+                      Please do not close this window.
+                    </p>
                   </div>
                 </div>
-                <div className="p-6 bg-gradient-to-br from-emerald-900/20 to-emerald-800/10 border border-emerald-500/20 rounded-3xl">
-                  <div className="flex items-center gap-3 text-emerald-400 mb-2">
-                    <TrendingDown className="w-5 h-5" />
-                    <span className="text-sm font-medium">Potential Savings</span>
-                  </div>
-                  <div className="text-4xl font-bold text-emerald-400">
-                    ₹{auditResult.potential_savings.toLocaleString('en-IN')}
-                  </div>
+
+              </div>
+              
+              <p className="text-center text-slate-400 text-xs mt-6">
+                This may take up to a minute depending on your transaction volume.
+              </p>
+            </motion.div>
+          )}
+
+          {/* 3. RESULTS SCREEN */}
+          {auditResult && !isAnalyzing && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="w-full max-w-4xl flex flex-col gap-8"
+            >
+              {/* Summary Header */}
+              <div className="text-center space-y-4 py-8">
+                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
+                  You spend <span className="text-slate-900">₹{auditResult.total_annual_spend.toLocaleString('en-IN')}</span> per year on subscriptions
+                </h2>
+                
+                <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-2 rounded-full font-medium text-sm">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  You could save ₹{auditResult.potential_savings.toLocaleString('en-IN')} per year
                 </div>
               </div>
 
-              {/* Subscriptions List */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-                <div className="p-6 border-b border-white/5">
-                  <h3 className="text-lg font-bold text-white">
-                    Detected Subscriptions ({auditResult.subscriptions.length})
-                  </h3>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-500 mb-2">
+                    <FileText className="w-5 h-5" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Subscriptions</span>
+                  </div>
+                  <p className="text-4xl font-bold text-slate-900">{auditResult.subscriptions.length}</p>
                 </div>
-                <div className="divide-y divide-white/5">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-2 text-slate-500 mb-2">
+                    <Banknote className="w-5 h-5" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Annual Spend</span>
+                  </div>
+                  <p className="text-4xl font-bold text-slate-900">₹{auditResult.total_annual_spend.toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+
+              {/* List */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Detected Subscriptions</h3>
+                  <button onClick={handleReset} className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+                    Scan New Statement
+                  </button>
+                </div>
+
+                <div className="grid gap-3">
                   {auditResult.subscriptions.map((sub, i) => (
-                    <motion.div
+                    <div
                       key={i}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
                       onClick={() => setSelectedSubscription(sub)}
-                      className={`p-6 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-all ${sub.unused_flag ? 'bg-amber-500/5' : ''
-                        }`}
+                      className={`
+                        group relative bg-white p-4 rounded-xl border transition-all cursor-pointer
+                        hover:shadow-md hover:border-blue-300
+                        ${sub.unused_flag ? 'border-orange-200 bg-orange-50/30' : 'border-slate-200'}
+                      `}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${sub.unused_flag
-                            ? 'bg-amber-500/20 text-amber-400'
-                            : 'bg-white/10 text-white'
-                          }`}>
-                          {sub.merchant[0]}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white">{sub.merchant}</span>
-                            {sub.unused_flag && (
-                              <span className="px-2 py-0.5 text-xs font-bold bg-amber-500/20 text-amber-400 rounded-full">
-                                Possibly Unused
-                              </span>
-                            )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`
+                            w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold
+                            ${sub.unused_flag ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}
+                          `}>
+                            {sub.merchant[0]}
                           </div>
-                          <div className="text-sm text-slate-500 flex items-center gap-2">
-                            <Calendar className="w-3 h-3" />
-                            {sub.billing_cycle}
-                            {sub.unused_flag && sub.unused_reason && (
-                              <span className="text-amber-400/80">• {sub.unused_reason}</span>
-                            )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-slate-900">{sub.merchant}</h4>
+                              {sub.unused_flag && (
+                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                                  Action Needed
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 font-mono mt-0.5">
+                              ID: {Math.random().toString(36).substr(2, 8).toUpperCase()} • Next billing: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </p>
                           </div>
                         </div>
+                        <div className="text-right">
+                          <p className="font-bold text-slate-900">₹{sub.monthly_cost}</p>
+                          <p className="text-xs text-slate-500">/mo</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold text-white">₹{sub.monthly_cost.toLocaleString('en-IN')}/mo</div>
-                        <div className="text-sm text-slate-500">₹{sub.annual_cost.toLocaleString('en-IN')}/yr</div>
-                      </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Gemini Attribution */}
-              <div className="text-center text-sm text-slate-500">
-                Analysis powered by <span className="text-purple-400">Google Gemini</span>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      {/* Cancellation Modal */}
+      {/* DETAILS DRAWER */}
       <AnimatePresence>
         {selectedSubscription && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6"
-            onClick={() => setSelectedSubscription(null)}
-          >
+          <>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-[#12121a] border border-white/10 rounded-3xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedSubscription(null)}
+              className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 right-0 z-50 w-full max-w-[480px] bg-white shadow-2xl flex flex-col"
             >
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-xl ${selectedSubscription.unused_flag
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : 'bg-purple-500/20 text-purple-400'
-                    }`}>
-                    {selectedSubscription.merchant[0]}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">{selectedSubscription.merchant}</h3>
-                    <p className="text-slate-400">₹{selectedSubscription.monthly_cost}/month</p>
-                  </div>
-                </div>
-                <button
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between p-6 border-b border-slate-100">
+                <h3 className="font-bold text-lg text-slate-900">Action Required</h3>
+                <button 
                   onClick={() => setSelectedSubscription(null)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
                 >
-                  <X className="w-5 h-5 text-slate-400" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {selectedSubscription.unused_flag && (
-                <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 mb-6">
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-                  <span className="text-sm">{selectedSubscription.unused_reason || 'This subscription may no longer be needed.'}</span>
+              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                
+                {/* Subscription Header */}
+                <div className="flex items-start gap-5">
+                  <div className="w-16 h-16 rounded-xl bg-blue-600 text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-blue-600/20">
+                    {selectedSubscription.merchant[0]}
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="text-2xl font-bold text-slate-900">{selectedSubscription.merchant}</h2>
+                    <p className="text-xs font-mono text-slate-500">Membership ID: #8839210</p>
+                    {selectedSubscription.unused_flag && (
+                      <div className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase tracking-wider rounded mt-1">
+                        High Spend Alert
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
 
-              <div className="space-y-4">
-                <h4 className="font-bold text-white flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4 text-purple-400" />
-                  How to Cancel
-                </h4>
-                <ol className="space-y-3">
-                  {selectedSubscription.cancellation_steps.map((step, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <span className="w-6 h-6 bg-purple-500/20 text-purple-400 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
-                        {i + 1}
-                      </span>
-                      <span className="text-slate-300">{step}</span>
-                    </li>
-                  ))}
-                </ol>
+                {/* Savings Box */}
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 flex gap-4">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0">
+                    <span className="font-bold text-lg">₹</span>
+                  </div>
+                  <div>
+                    <p className="font-bold text-emerald-800 text-sm">
+                      Cancel now to save ₹{selectedSubscription.annual_cost.toLocaleString('en-IN')}/yr
+                    </p>
+                    <p className="text-xs text-emerald-600 mt-1">
+                      Based on your recurring monthly payment of ₹{selectedSubscription.monthly_cost.toLocaleString('en-IN')}.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cancellation Steps */}
+                <div className="space-y-6">
+                  <h4 className="font-bold text-slate-900">How to cancel</h4>
+                  
+                  <div className="relative pl-4 ml-3 border-l-2 border-slate-100 space-y-8">
+                    {selectedSubscription.cancellation_steps.map((step, i) => (
+                      <div key={i} className="relative pl-8">
+                        <div className="absolute -left-[21px] top-0 w-8 h-8 rounded-full bg-blue-50 text-blue-600 border-4 border-white flex items-center justify-center text-sm font-bold">
+                          {i + 1}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-900 text-sm">
+                            {i === 0 ? "Log in to the Portal" : 
+                             i === 1 ? "Navigate to Membership Settings" :
+                             i === 2 ? "Request Cancellation" : "Confirm Email"}
+                          </p>
+                          <p className="text-sm text-slate-500 leading-relaxed">
+                            {step}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
 
-              <div className="mt-8 pt-6 border-t border-white/10">
-                <div className="text-sm text-slate-500">
-                  Cancelling this saves you <span className="text-emerald-400 font-bold">₹{selectedSubscription.annual_cost.toLocaleString('en-IN')}/year</span>
-                </div>
+              {/* Drawer Footer */}
+              <div className="p-6 border-t border-slate-100 bg-slate-50 space-y-4">
+                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.98]">
+                  Go to Member Portal
+                  <ExternalLink className="w-4 h-4" />
+                </button>
+                <button className="w-full text-sm font-medium text-slate-500 hover:text-slate-900 underline decoration-dashed underline-offset-4">
+                  Mark as "Intentionally Kept"
+                </button>
               </div>
+
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
+
     </div>
   );
 };
 
 export default BillShield;
+
