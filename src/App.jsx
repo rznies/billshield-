@@ -152,176 +152,223 @@ const BillShield = () => {
         </div>
       </header>
 
-      <main className={`w-full max-w-5xl mx-auto px-6 pb-12 flex flex-col items-center ${!isAnalyzing && !auditResult ? 'justify-start pt-10' : 'justify-center'} min-h-[calc(100vh-100px)]`}>
+      <main className={`w-full max-w-7xl mx-auto px-4 pb-12 flex flex-col items-center ${!isAnalyzing && !auditResult ? 'justify-start pt-4' : 'justify-center'} min-h-[calc(100vh-100px)]`}>
         
         <AnimatePresence mode="wait">
-          {/* 1. LANDING PAGE & INPUT SCREEN */}
+          {/* 1. LANDING PAGE & INPUT SCREEN (BENTO GRID) */}
           {!isAnalyzing && !auditResult && (
             <motion.div
               key="input"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="w-full flex flex-col items-center gap-20"
+              className="w-full grid grid-cols-1 md:grid-cols-12 gap-4"
             >
-              {/* Hero Section */}
-              <div className="text-center space-y-6 max-w-3xl mt-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold uppercase tracking-wider">
+              {/* Cell 1: Hero Text */}
+              <div className="col-span-12 lg:col-span-8 bg-white rounded-3xl p-8 md:p-12 flex flex-col justify-center gap-6 border border-slate-200 shadow-sm">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold uppercase tracking-wider w-fit">
                   <Zap className="w-3 h-3 fill-blue-600" />
                   AI-Powered Finance
                 </div>
-                <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+                <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
                   Stop paying for subscriptions you don't use.
                 </h1>
-                <p className="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg text-slate-500 max-w-xl leading-relaxed">
                   BillShield analyzes your bank statement to find hidden recurring charges and helps you cancel them instantly.
                 </p>
               </div>
 
-              {/* The Tool Card */}
-              <div className="w-full max-w-[600px] bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 p-8 flex flex-col gap-6 relative z-10">
-                <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
-                  Try it now — No login required
+              {/* Cell 2: Savings Stat */}
+              <div className="col-span-6 lg:col-span-2 bg-white rounded-3xl p-6 flex flex-col justify-between border border-slate-200 shadow-sm hover:shadow-md transition-all group min-h-[180px]">
+                <div className="flex justify-between items-start">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <TrendingDown className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <span className="px-2 py-1 rounded-full bg-emerald-50 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                    Proven
+                  </span>
+                </div>
+                <div>
+                  <div className="text-3xl font-extrabold text-slate-900 tracking-tight">₹12k</div>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Avg. Annual Savings</div>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Most users find 3+ unused subscriptions in their first scan.
+                  </p>
+                </div>
+              </div>
+
+              {/* Cell 3: Privacy Stat */}
+              <div className="col-span-6 lg:col-span-2 bg-white rounded-3xl p-6 flex flex-col justify-between border border-slate-200 shadow-sm hover:shadow-md transition-all group min-h-[180px]">
+                <div className="flex justify-between items-start">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <span className="px-2 py-1 rounded-full bg-blue-50 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+                    Local
+                  </span>
+                </div>
+                <div>
+                  <div className="text-3xl font-extrabold text-slate-900 tracking-tight">100%</div>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-1">Private & Secure</div>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Analysis runs locally in your browser. No data upload.
+                  </p>
+                </div>
+              </div>
+
+              {/* Cell 4: The Input Tool */}
+              <div className="col-span-12 lg:col-span-8 row-span-2 bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 p-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-bl-2xl z-20">
+                  Try it now — No login
                 </div>
                 
-                {/* PDF Upload */}
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  className={`
-                    group relative flex flex-col items-center justify-center gap-4 
-                    rounded-xl border-2 border-dashed p-10 transition-all cursor-pointer
-                    ${pdfFile 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50'
-                    }
-                  `}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    className="hidden"
+                <div className="flex flex-col gap-6 h-full justify-center relative z-10">
+                  {/* PDF Upload */}
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className={`
+                      group relative flex flex-col items-center justify-center gap-4 
+                      rounded-xl border-2 border-dashed p-10 transition-all cursor-pointer
+                      ${pdfFile 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50'
+                      }
+                    `}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    
+                    <div className={`
+                      w-12 h-12 rounded-full flex items-center justify-center transition-colors
+                      ${pdfFile ? 'bg-blue-100 text-blue-600' : 'bg-blue-50 text-blue-600 group-hover:scale-110 duration-200'}
+                    `}>
+                      {pdfFile ? <Check className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+                    </div>
+
+                    <div className="space-y-1 text-center">
+                      <p className="font-semibold text-slate-900">
+                        {pdfFile ? pdfFile.name : 'Upload bank statement (PDF)'}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {pdfFile ? 'Click to change file' : 'Drag and drop or click to browse'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-slate-200"></div>
+                    <span className="flex-shrink-0 mx-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">OR</span>
+                    <div className="flex-grow border-t border-slate-200"></div>
+                  </div>
+
+                  {/* Text Input */}
+                  <textarea
+                    value={statementText}
+                    onChange={(e) => setStatementText(e.target.value)}
+                    placeholder="Paste your bank or card statement text here..."
+                    className="w-full h-32 p-4 rounded-xl border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm transition-all"
                   />
-                  
-                  <div className={`
-                    w-12 h-12 rounded-full flex items-center justify-center transition-colors
-                    ${pdfFile ? 'bg-blue-100 text-blue-600' : 'bg-blue-50 text-blue-600 group-hover:scale-110 duration-200'}
-                  `}>
-                    {pdfFile ? <Check className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
+
+                  {error && (
+                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+                      <AlertTriangle className="w-4 h-4" />
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Action Button */}
+                  <button
+                    onClick={handleAudit}
+                    disabled={!canAnalyze}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold h-12 rounded-lg transition-all shadow-sm active:scale-[0.98] text-lg"
+                  >
+                    Analyze Subscriptions
+                  </button>
+
+                  {/* Security Note */}
+                  <div className="flex items-center justify-center gap-2 text-slate-400 text-xs font-medium">
+                    <Lock className="w-3 h-3" />
+                    Your data is analyzed once and never stored.
                   </div>
-
-                  <div className="space-y-1 text-center">
-                    <p className="font-semibold text-slate-900">
-                      {pdfFile ? pdfFile.name : 'Upload bank statement (PDF)'}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {pdfFile ? 'Click to change file' : 'Drag and drop or click to browse'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink-0 mx-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">OR</span>
-                  <div className="flex-grow border-t border-slate-200"></div>
-                </div>
-
-                {/* Text Input */}
-                <textarea
-                  value={statementText}
-                  onChange={(e) => setStatementText(e.target.value)}
-                  placeholder="Paste your bank or card statement text here..."
-                  className="w-full h-32 p-4 rounded-xl border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-sm transition-all"
-                />
-
-                {error && (
-                  <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
-                    <AlertTriangle className="w-4 h-4" />
-                    {error}
-                  </div>
-                )}
-
-                {/* Action Button */}
-                <button
-                  onClick={handleAudit}
-                  disabled={!canAnalyze}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold h-12 rounded-lg transition-all shadow-sm active:scale-[0.98] text-lg"
-                >
-                  Analyze Subscriptions
-                </button>
-
-                {/* Security Note */}
-                <div className="flex items-center justify-center gap-2 text-slate-400 text-xs font-medium">
-                  <Lock className="w-3 h-3" />
-                  Your data is analyzed once and never stored.
                 </div>
               </div>
 
-              {/* Social Proof / Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl border-y border-slate-200 py-12">
-                <div className="flex flex-col items-center text-center gap-2">
-                  <div className="text-4xl font-extrabold text-slate-900">₹12k</div>
-                  <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Avg. Annual Savings</div>
-                </div>
-                <div className="flex flex-col items-center text-center gap-2 border-x border-slate-200">
-                  <div className="text-4xl font-extrabold text-slate-900">100%</div>
-                  <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Private & Secure</div>
-                </div>
-                <div className="flex flex-col items-center text-center gap-2">
-                  <div className="text-4xl font-extrabold text-slate-900">&lt; 2m</div>
-                  <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Time to Audit</div>
-                </div>
-              </div>
-
-              {/* How it Works */}
-              <div className="w-full max-w-4xl space-y-12 pb-12">
-                <div className="text-center space-y-4">
-                  <h2 className="text-3xl font-bold text-slate-900">How BillShield works</h2>
-                  <p className="text-slate-500">Three simple steps to financial clarity.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Cell 5: How it Works */}
+              <div className="col-span-12 lg:col-span-4 bg-slate-50 rounded-3xl p-8 border border-slate-200 flex flex-col justify-center">
+                <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  How it works
+                </h3>
+                <div className="space-y-6">
                   {[
-                    {
-                      icon: <Upload className="w-6 h-6 text-blue-600" />,
-                      title: "1. Upload Statement",
-                      desc: "Upload your PDF bank statement or paste the transaction text directly."
-                    },
-                    {
-                      icon: <Search className="w-6 h-6 text-blue-600" />,
-                      title: "2. AI Analysis",
-                      desc: "Our Gemini-powered AI scans for recurring patterns and hidden charges."
-                    },
-                    {
-                      icon: <TrendingDown className="w-6 h-6 text-blue-600" />,
-                      title: "3. Cancel & Save",
-                      desc: "Get a list of subscriptions and step-by-step guides to cancel them."
-                    }
-                  ].map((item, i) => (
-                    <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
-                        {item.icon}
+                    { title: "Upload Statement", desc: "PDF or text paste." },
+                    { title: "AI Analysis", desc: "Gemini scans for patterns." },
+                    { title: "Cancel & Save", desc: "Get actionable insights." }
+                  ].map((step, i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-sm text-slate-900 shadow-sm flex-shrink-0">
+                        {i + 1}
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 mb-2">{item.title}</h3>
-                        <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
+                        <div className="font-bold text-slate-900 text-sm">{step.title}</div>
+                        <div className="text-xs text-slate-500">{step.desc}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Trust Section */}
-              <div className="w-full max-w-3xl bg-slate-900 rounded-2xl p-8 md:p-12 text-center space-y-6 mb-12">
-                <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto" />
-                <h2 className="text-2xl md:text-3xl font-bold text-white">Bank-grade privacy by default.</h2>
-                <p className="text-slate-400 max-w-xl mx-auto leading-relaxed">
-                  BillShield runs entirely in your browser session. We don't store your statements, we don't ask for your name, and we don't sell your data.
-                </p>
+              {/* Cell 6: What We Detect */}
+              <div className="col-span-12 lg:col-span-4 bg-white rounded-3xl p-8 border border-slate-200">
+                 <h3 className="font-bold text-slate-900 mb-4">We detect</h3>
+                 <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { icon: "🎬", label: "Streaming" },
+                      { icon: "🎵", label: "Music" },
+                      { icon: "💪", label: "Fitness" },
+                      { icon: "☁️", label: "SaaS" },
+                      { icon: "📦", label: "Deliveries" },
+                      { icon: "🎮", label: "Gaming" }
+                    ].map((cat, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                        <span className="text-lg">{cat.icon}</span>
+                        <span className="text-xs font-bold text-slate-700">{cat.label}</span>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+
+              {/* Cell 7: Banks */}
+              <div className="col-span-12 lg:col-span-6 bg-white rounded-3xl p-8 border border-slate-200 flex flex-col justify-center">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 text-center">Supported Banks</p>
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 opacity-50 grayscale hover:grayscale-0 transition-all">
+                  {['HDFC Bank', 'ICICI Bank', 'SBI Card', 'Axis Bank', 'Amex', 'Cred'].map((bank) => (
+                    <span key={bank} className="text-lg font-bold text-slate-800">{bank}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cell 8: FAQ */}
+              <div className="col-span-12 lg:col-span-6 bg-blue-50 rounded-3xl p-8 border border-blue-100">
+                 <h3 className="font-bold text-blue-900 mb-4">FAQ</h3>
+                 <div className="space-y-3">
+                    <div className="bg-white/50 p-3 rounded-lg">
+                      <p className="text-xs font-bold text-blue-900">Is it safe?</p>
+                      <p className="text-xs text-blue-700 mt-1">Yes. Data is processed in-browser and never stored.</p>
+                    </div>
+                    <div className="bg-white/50 p-3 rounded-lg">
+                      <p className="text-xs font-bold text-blue-900">Cost?</p>
+                      <p className="text-xs text-blue-700 mt-1">100% Free for now.</p>
+                    </div>
+                 </div>
               </div>
 
             </motion.div>
@@ -430,110 +477,86 @@ const BillShield = () => {
             </motion.div>
           )}
 
-          {/* 3. RESULTS SCREEN */}
+          {/* 3. RESULTS SCREEN (BENTO GRID) */}
           {auditResult && !isAnalyzing && (
             <motion.div
               key="results"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="w-full max-w-4xl flex flex-col gap-8"
+              className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 p-4"
             >
-              {/* Summary Header */}
-              <div className="text-center space-y-4 py-8">
-                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
-                  You spend <span className="text-slate-900">₹{auditResult.total_annual_spend.toLocaleString('en-IN')}</span> per year on subscriptions
+              {/* Summary Cell */}
+              <div className="col-span-12 md:col-span-8 bg-white rounded-3xl p-8 border border-slate-200 flex flex-col justify-center gap-2 shadow-sm">
+                <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                  You spend <span className="text-blue-600">₹{auditResult.total_annual_spend.toLocaleString('en-IN')}</span> /yr
                 </h2>
-                
-                <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-2 rounded-full font-medium text-sm">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  You could save ₹{auditResult.potential_savings.toLocaleString('en-IN')} per year
-                </div>
-
-                <p className="text-xs text-slate-400">
-                  Analysis generated {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                </p>
-              </div>
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center gap-2 text-slate-500 mb-2">
-                    <FileText className="w-5 h-5" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Total Subscriptions</span>
-                  </div>
-                  <p className="text-4xl font-bold text-slate-900">{auditResult.subscriptions.length}</p>
-                </div>
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                  <div className="flex items-center gap-2 text-slate-500 mb-2">
-                    <Banknote className="w-5 h-5" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Your Annual Subscription Spend</span>
-                  </div>
-                  <p className="text-4xl font-bold text-slate-900">₹{auditResult.total_annual_spend.toLocaleString('en-IN')}</p>
+                <p className="text-slate-500 text-lg">on {auditResult.subscriptions.length} subscriptions found in your statement.</p>
+                <div className="text-xs text-slate-400 mt-2">
+                  Analysis generated {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
               </div>
 
-              {/* List */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-1">
-                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Subscriptions We Found</h3>
-                  <button onClick={handleReset} className="text-sm font-semibold text-blue-600 hover:text-blue-700">
-                    Analyze Another Statement
-                  </button>
+              {/* Savings Cell */}
+              <div className="col-span-12 md:col-span-4 bg-emerald-500 rounded-3xl p-8 flex flex-col justify-center text-white shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-20">
+                  <TrendingDown className="w-24 h-24" />
                 </div>
+                <div className="relative z-10">
+                  <div className="text-sm font-bold uppercase tracking-wider opacity-90 mb-1">Potential Savings</div>
+                  <div className="text-4xl font-extrabold">₹{auditResult.potential_savings.toLocaleString('en-IN')}</div>
+                  <div className="text-xs font-medium opacity-80 mt-2">If you cancel unused items</div>
+                </div>
+              </div>
 
-                <div className="grid gap-3">
+              {/* List Header */}
+              <div className="col-span-12 flex items-center justify-between px-2 mt-4">
+                 <h3 className="text-lg font-bold text-slate-900">Subscriptions Found</h3>
+                 <button onClick={handleReset} className="text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-full transition-colors">
+                    Analyze New File
+                 </button>
+              </div>
+
+              {/* List Grid */}
+              <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...auditResult.subscriptions].sort((a, b) => (b.unused_flag ? 1 : 0) - (a.unused_flag ? 1 : 0)).map((sub, i) => (
                     <div
                       key={i}
                       onClick={() => setSelectedSubscription(sub)}
                       className={`
-                        group relative bg-white p-4 rounded-xl border transition-all cursor-pointer
-                        hover:shadow-md hover:border-blue-300
+                        group relative bg-white p-6 rounded-3xl border transition-all cursor-pointer
+                        hover:shadow-lg hover:-translate-y-1
                         ${sub.unused_flag ? 'border-orange-200 bg-orange-50/30' : 'border-slate-200'}
                       `}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={`
-                            w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold
+                      <div className="flex items-start justify-between mb-4">
+                         <div className={`
+                            w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold
                             ${sub.unused_flag ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}
                           `}>
                             {sub.merchant[0]}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-slate-900">{sub.merchant}</h4>
-                              {sub.unused_flag && (
-                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
-                                  Review Recommended
-                                </span>
-                              )}
-                              {sub.confidence && (
-                                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${
-                                  sub.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
-                                  sub.confidence === 'medium' ? 'bg-slate-100 text-slate-600' :
-                                  'bg-amber-100 text-amber-700'
-                                }`}>
-                                  {sub.confidence === 'high' ? '✓ High Confidence' :
-                                   sub.confidence === 'medium' ? '~ Likely' : '? Needs Review'}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              <span className="capitalize">{sub.billing_cycle || 'Monthly'}</span> • ₹{sub.annual_cost?.toLocaleString('en-IN') || (sub.monthly_cost * 12).toLocaleString('en-IN')}/year
-                            </p>
+                          <div className="text-right">
+                            <div className="font-bold text-slate-900 text-lg">₹{sub.monthly_cost}</div>
+                            <div className="text-xs text-slate-500">/mo</div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-slate-900">₹{sub.monthly_cost}</p>
-                          <p className="text-xs text-slate-500">/mo</p>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-bold text-slate-900 text-lg mb-1">{sub.merchant}</h4>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {sub.unused_flag && (
+                                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                                  Review
+                                </span>
+                              )}
+                             <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                                {sub.billing_cycle || 'Monthly'}
+                             </span>
                         </div>
                       </div>
                     </div>
                   ))}
-                </div>
               </div>
-
             </motion.div>
           )}
         </AnimatePresence>
@@ -651,6 +674,22 @@ const BillShield = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Footer */}
+      <footer className="w-full bg-white border-t border-slate-200 py-8 mt-auto">
+        <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-slate-400" />
+            <span className="font-bold text-slate-500">BillShield</span>
+          </div>
+          <p className="text-sm text-slate-400">© 2025 BillShield. Built for the Hackathon.</p>
+          <div className="flex gap-6 text-sm font-medium text-slate-500">
+            <a href="#" className="hover:text-slate-900">Privacy</a>
+            <a href="#" className="hover:text-slate-900">Terms</a>
+            <a href="#" className="hover:text-slate-900">Contact</a>
+          </div>
+        </div>
+      </footer>
 
     </div>
   );
