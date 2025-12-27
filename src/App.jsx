@@ -349,9 +349,26 @@ const BillShield = () => {
               {/* Cell 7: Banks */}
               <div className="col-span-12 lg:col-span-6 bg-white rounded-3xl p-8 border border-slate-200 flex flex-col justify-center">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 text-center">Supported Banks</p>
-                <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 opacity-50 grayscale hover:grayscale-0 transition-all">
-                  {['HDFC Bank', 'ICICI Bank', 'SBI Card', 'Axis Bank', 'Amex', 'Cred'].map((bank) => (
-                    <span key={bank} className="text-lg font-bold text-slate-800">{bank}</span>
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-6 items-center opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                  {[
+                    { name: 'HDFC Bank', domain: 'hdfcbank.com' },
+                    { name: 'ICICI Bank', domain: 'icicibank.com' },
+                    { name: 'SBI Card', domain: 'sbicard.com' },
+                    { name: 'Axis Bank', domain: 'axisbank.com' },
+                    { name: 'American Express', domain: 'americanexpress.com' },
+                    { name: 'Cred', domain: 'cred.club' }
+                  ].map((bank) => (
+                    <img 
+                      key={bank.name} 
+                      src={`https://logo.clearbit.com/${bank.domain}`} 
+                      alt={bank.name}
+                      title={bank.name}
+                      className="h-8 w-auto object-contain hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
                   ))}
                 </div>
               </div>
