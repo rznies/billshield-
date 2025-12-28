@@ -15,12 +15,21 @@ export const analyzeSubscriptions = async (input, inputType = 'text') => {
             body: JSON.stringify({ input, inputType }),
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to analyze subscriptions');
+        // Try to parse response as JSON
+        let data;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            throw new Error(`Server error: ${text.substring(0, 100)}`);
         }
 
-        return await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || data.details || 'Failed to analyze subscriptions');
+        }
+
+        return data;
     } catch (error) {
         console.error("Analysis Error:", error);
         throw error;

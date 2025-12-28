@@ -1,7 +1,6 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-const API_KEY = process.env.GEMINI_API_KEY;
-const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
+export const config = {
+    runtime: 'edge',
+};
 
 const JSON_SCHEMA = `{
   "subscriptions": [
@@ -41,50 +40,47 @@ ${JSON_SCHEMA}
 
 IMPORTANT: Your response must be ONLY the JSON object. Nothing else.`;
 
-module.exports = async function handler(req, res) {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
-
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+export default async function handler(request) {
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+        return new Response(null, {
+            status: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
+        });
     }
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+    if (request.method !== 'POST') {
+        return Response.json({ error: 'Method not allowed' }, { status: 405 });
     }
 
-    if (!genAI) {
-        return res.status(500).json({ error: 'Gemini API key not configured on server. Please add GEMINI_API_KEY environment variable in Vercel.' });
-    }
-
-    const { input, inputType } = req.body;
-
-    if (!input) {
-        return res.status(400).json({ error: 'Input is required' });
+    const API_KEY = process.env.GEMINI_API_KEY;
+    
+    if (!API_KEY) {
+        return Response.json(
+            { error: 'GEMINI_API_KEY environment variable is not set. Please add it in Vercel Dashboard > Settings > Environment Variables.' },
+            { status: 500 }
+        );
     }
 
     try {
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            generationConfig: {
-                temperature: 0,
-                responseMimeType: "application/json",
-            }
-        });
+        const body = await request.json();
+        const { input, inputType } = body;
 
-        let content;
+        if (!input) {
+            return Response.json({ error: 'Input is required' }, { status: 400 });
+        }
+
+        // Build request for Gemini API
+        let parts;
         if (inputType === 'pdf') {
-            content = [
+            parts = [
                 {
-                    inlineData: {
-                        mimeType: "application/pdf",
+                    inline_data: {
+                        mime_type: "application/pdf",
                         data: input
                     }
                 },
@@ -93,17 +89,66 @@ module.exports = async function handler(req, res) {
                 }
             ];
         } else {
-            content = `${SYSTEM_PROMPT}\n\nTASK: Analyze these transactions. 1. Identify recurring subscriptions. 2. CALCULATE: annual_cost = monthly_cost * 12. 3. SUM all annual_costs to get total_annual_spend.\n\nTransactions:\n${input}`;
+            parts = [
+                {
+                    text: `${SYSTEM_PROMPT}\n\nTASK: Analyze these transactions. 1. Identify recurring subscriptions. 2. CALCULATE: annual_cost = monthly_cost * 12. 3. SUM all annual_costs to get total_annual_spend.\n\nTransactions:\n${input}`
+                }
+            ];
         }
 
-        const result = await model.generateContent(content);
-        const response = await result.response;
-        const text = response.text();
+        // Call Gemini API directly via REST
+        const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{ parts }],
+                    generationConfig: {
+                        temperature: 0,
+                        responseMimeType: "application/json",
+                    }
+                }),
+            }
+        );
+
+        if (!geminiResponse.ok) {
+            const errorText = await geminiResponse.text();
+            console.error('Gemini API error:', errorText);
+            return Response.json(
+                { error: 'Gemini API error', details: errorText },
+                { status: 500 }
+            );
+        }
+
+        const geminiData = await geminiResponse.json();
+        
+        // Extract the text from Gemini response
+        const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!text) {
+            return Response.json(
+                { error: 'No response from Gemini API', details: JSON.stringify(geminiData) },
+                { status: 500 }
+            );
+        }
+
+        // Parse the JSON response
         const parsed = JSON.parse(text);
 
-        return res.status(200).json(parsed);
+        return Response.json(parsed, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+            },
+        });
+
     } catch (error) {
-        console.error("Gemini API Error:", error);
-        return res.status(500).json({ error: 'Failed to analyze subscriptions', details: error.message });
+        console.error('API Error:', error);
+        return Response.json(
+            { error: 'Failed to analyze subscriptions', details: error.message },
+            { status: 500 }
+        );
     }
-};
+}
